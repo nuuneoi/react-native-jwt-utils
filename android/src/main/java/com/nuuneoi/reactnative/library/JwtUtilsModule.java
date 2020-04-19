@@ -34,6 +34,7 @@ public class JwtUtilsModule extends ReactContextBaseJavaModule {
     public JwtUtilsModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
     }
 
     @Override
@@ -81,7 +82,6 @@ public class JwtUtilsModule extends ReactContextBaseJavaModule {
             }
         };
         try {
-            Security.insertProviderAt(new BouncyCastleProvider(), 1);
             Algorithm algorithm = Algorithm.ECDSA256(keyProvider);
             JWT.require(algorithm).build().verify(token);
             promise.resolve(true);
