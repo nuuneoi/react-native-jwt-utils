@@ -6,13 +6,14 @@ Pod::Spec.new do |s|
   s.description  = <<-DESC
                   JwtUtils
                    DESC
-  s.homepage     = ""
+  s.homepage     = "https://github.com/codeforpublic/react-native-jwt-utils.git"
   s.license      = "MIT"
   # s.license      = { :type => "MIT", :file => "FILE_LICENSE" }
   s.author             = { "author" => "sittiphol@gmail.com" }
   s.platform     = :ios, "7.0"
-  s.source       = { :git => "https://github.com/codeforpublic/jwt-utils.git", :tag => "master" }
-  s.source_files  = "RNJwtUtils/**/*.{h,m}"
+  s.source       = { :git => "https://github.com/codeforpublic/react-native-jwt-utils.git", :tag => "master" }
+  s.source_files = "ios/**/*.{h,m}"
+  s.vendored_frameworks = 'ios/secp256k1.framework'
   s.requires_arc = true
 
 
