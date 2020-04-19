@@ -9,5 +9,14 @@
 }
 RCT_EXPORT_MODULE()
 
+RCT_EXPORT_METHOD(verify: (NSString*)token
+                       x: (NSString*)x
+                       y: (NSString*)y
+                resolver: (RCTPromiseResolveBlock)resolve
+                rejecter: (RCTPromiseRejectBlock)reject)
+{
+    resolve(true);
+}
+
 @end
   

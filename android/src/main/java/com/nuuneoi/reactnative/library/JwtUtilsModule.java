@@ -1,22 +1,98 @@
 
 package com.nuuneoi.reactnative.library;
 
+import android.util.Log;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.ECDSAKeyProvider;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.Callback;
+import com.nuuneoi.reactnative.library.utils.Base64Utils;
+
+import org.spongycastle.jce.provider.BouncyCastleProvider;
+
+import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.ECPublicKeySpec;
+import java.security.spec.InvalidKeySpecException;
 
 public class JwtUtilsModule extends ReactContextBaseJavaModule {
 
-  private final ReactApplicationContext reactContext;
+    private final ReactApplicationContext reactContext;
 
-  public JwtUtilsModule(ReactApplicationContext reactContext) {
-    super(reactContext);
-    this.reactContext = reactContext;
-  }
+    public JwtUtilsModule(ReactApplicationContext reactContext) {
+        super(reactContext);
+        this.reactContext = reactContext;
+    }
 
-  @Override
-  public String getName() {
-    return "JwtUtils";
-  }
+    @Override
+    public String getName() {
+        return "JwtUtils";
+    }
+
+    @ReactMethod
+    public void verify(String token, final String x, final String y, final Promise promise) {
+        ECDSAKeyProvider keyProvider = new ECDSAKeyProvider() {
+            @Override
+            public ECPublicKey getPublicKeyById(String keyId) {
+                try {
+                    BigInteger xb = new BigInteger(1, Base64Utils.decode(x));
+                    BigInteger yb = new BigInteger(1, Base64Utils.decode(y));
+                    ECPoint point = new ECPoint(xb, yb);
+                    KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+                    kpg.initialize(new ECGenParameterSpec("secp256k1"));
+                    KeyPair kp = kpg.generateKeyPair();
+
+                    ECPublicKeySpec otherKeySpec = new ECPublicKeySpec(point, ((ECPublicKey) kp.getPublic()).getParams());
+                    KeyFactory keyFactory = KeyFactory.getInstance("EC");
+                    ECPublicKey publicKey = (ECPublicKey) keyFactory.generatePublic(otherKeySpec);
+                    return publicKey;
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                    return null;
+                } catch (InvalidAlgorithmParameterException e) {
+                    e.printStackTrace();
+                    return null;
+                } catch (InvalidKeySpecException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            @Override
+            public ECPrivateKey getPrivateKey() {
+                return null;
+            }
+
+            @Override
+            public String getPrivateKeyId() {
+                return null;
+            }
+        };
+        try {
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            Algorithm algorithm = Algorithm.ECDSA256(keyProvider);
+            JWT.require(algorithm).build().verify(token);
+            promise.resolve(true);
+        } catch (JWTVerificationException exception) {
+            //Algorithm algorithm = Algorithm.ECDSA256();
+            promise.reject("error", "Invalid");
+        } catch (Exception e) {
+            promise.reject("error", "Invalid");
+        }
+    }
+
 }
