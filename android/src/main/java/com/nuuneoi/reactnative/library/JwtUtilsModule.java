@@ -44,12 +44,24 @@ public class JwtUtilsModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void verify(String token, final String x, final String y, final Promise promise) {
+        // Validate Input
+        if (token == null || x == null || y == null) {
+            promise.reject("JsonWebTokenError", "jwt malformed");
+            return;
+        }
+
+        // Correct Base64 Characters
+        token = token.replace('_', '/').replace('-', '+');
+        final String xProcessed = x.replace('_', '/').replace('-', '+');
+        final String yProcessed = y.replace('_', '/').replace('-', '+');
+
+        // Create Key Provider
         ECDSAKeyProvider keyProvider = new ECDSAKeyProvider() {
             @Override
             public ECPublicKey getPublicKeyById(String keyId) {
                 try {
-                    BigInteger xb = new BigInteger(1, Base64Utils.decode(x));
-                    BigInteger yb = new BigInteger(1, Base64Utils.decode(y));
+                    BigInteger xb = new BigInteger(1, Base64Utils.decode(xProcessed));
+                    BigInteger yb = new BigInteger(1, Base64Utils.decode(yProcessed));
                     ECPoint point = new ECPoint(xb, yb);
                     KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
                     kpg.initialize(new ECGenParameterSpec("secp256k1"));
@@ -81,15 +93,17 @@ public class JwtUtilsModule extends ReactContextBaseJavaModule {
                 return null;
             }
         };
+
+        // Verification
         try {
             Algorithm algorithm = Algorithm.ECDSA256(keyProvider);
             JWT.require(algorithm).build().verify(token);
             promise.resolve(true);
         } catch (JWTVerificationException exception) {
             //Algorithm algorithm = Algorithm.ECDSA256();
-            promise.reject("error", "Invalid");
+            promise.reject("JsonWebTokenError", "invalid signature");
         } catch (Exception e) {
-            promise.reject("error", "Invalid");
+            promise.reject("JsonWebTokenError", "invalid signature");
         }
     }
 
